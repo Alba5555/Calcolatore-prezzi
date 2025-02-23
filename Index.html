@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Prezzi Corsi Acquerello</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        label {
+            display: inline-block;
+            width: 200px;
+            margin-bottom: 10px;
+        }
+        
+        input, select {
+            width: 150px;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        #output {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        hr {
+            border: 1px solid #eee;
+            margin: 20px 0;
+        }
+        
+        strong {
+            color: #2c3e50;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calcolatore Prezzi Corsi Acquerello</h1>
+
+    <form id="priceForm">
+        <label for="adults">Numero Adulti:</label>
+        <input type="number" id="adults" name="adults" min="0" value="0"><br><br>
+
+        <label for="children">Numero Bambini:</label>
+        <input type="number" id="children" name="children" min="0" value="0"><br><br>
+
+        <label for="km">Distanza in km (solo andata):</label>
+        <input type="number" id="km" name="km" min="0" value="0"><br><br>
+
+        <label for="materials">Materiali:</label>
+        <select id="materials" name="materials">
+            <option value="nessuno">Nessuno</option>
+            <option value="economico">Economico</option>
+            <option value="intermedio">Intermedio</option>
+            <option value="professionale">Professionale</option>
+        </select><br><br>
+
+        <button type="button" onclick="calculatePrice()">Calcola Prezzo</button>
+    </form>
+
+    <h2>Risultati</h2>
+    <p id="output"></p>
+
+    <script>
+        function calculatePrice() {
+            // Input utente
+            const adults = parseInt(document.getElementById("adults").value) || 0;
+            const children = parseInt(document.getElementById("children").value) || 0;
+            const km = parseFloat(document.getElementById("km").value) || 0;
+            const materials = document.getElementById("materials").value;
+
+            // Verifica se ci sono partecipanti
+            if (adults === 0 && children === 0) {
+                document.getElementById("output").innerHTML = `
+                    <p class="error-message">Inserisci almeno un partecipante per calcolare il prezzo.</p>
+                `;
+                return;
+            }
+
+            // Dati di base
+            const adultBasePrice = 30;  // Prezzo base adulti
+            const childBasePrice = 20;  // Prezzo base bambini
+            const familyBasePrice = 20; // Prezzo base in modalità famiglia
+            const fuelPrice = 1.70;     // Prezzo carburante al litro
+            const vehicleEfficiency = 10; // km per litro
+            const wearCostPerKm = 0.20; // Costo usura per km
+            const discount6 = 18; // Prezzo scontato per gruppi da 6 a 9 persone
+            const discount10 = 15; // Prezzo scontato per gruppi da 10 persone in su
+
+            const totalParticipants = adults + children;
+
+            // Calcolo costo base in base al numero di partecipanti
+            let baseCostPerAdult = adultBasePrice;
+            let baseCostPerChild = childBasePrice;
+
+            // Applico sconti per gruppi
+            if (totalParticipants >= 10) {
+                baseCostPerAdult = discount10;
+                baseCostPerChild = discount10;
+            } else if (totalParticipants >= 6) {
+                baseCostPerAdult = discount6;
+                baseCostPerChild = discount6;
+            }
+
+            // Calcolo costo materiali
+            let materialCost = 0;
+            if (materials === "economico") {
+                materialCost = 10;
+            } else if (materials === "intermedio") {
+                materialCost = 20;
+            } else if (materials === "professionale") {
+                materialCost = 40;
+            }
+
+            // Calcolo trasferta (gratuita fino a 15 km)
+            let travelCostPerPerson = 0;
+            if (km > 15) {
+                const totalDistance = km * 2; // Andata e ritorno
+                const fuelCost = (totalDistance / vehicleEfficiency) * fuelPrice;
+                const wearCost = totalDistance * wearCostPerKm;
+                const totalTravelCost = fuelCost + wearCost;
+                travelCostPerPerson = totalParticipants > 0 ? totalTravelCost / totalParticipants : 0;
+            }
+
+            // Calcolo prezzi totali per adulto e bambino
+            const totalPricePerAdult = baseCostPerAdult + materialCost + travelCostPerPerson;
+            const totalPricePerChild = baseCostPerChild + materialCost + travelCostPerPerson;
+
+            // Calcolo totale generale
+            const totalAdults = totalPricePerAdult * adults;
+            const totalChildren = totalPricePerChild * children;
+            const totalCost = totalAdults + totalChildren;
+
+            // Prepara l'output
+            let output = '';
+
+            // Sezione adulti solo se ci sono adulti
+            if (adults > 0) {
+                output += `
+                    <h3>Adulti</h3>
+                    <p>Costo base per adulto: €${baseCostPerAdult.toFixed(2)}</p>
+                    <p>Costo materiali per adulto: €${materialCost.toFixed(2)}</p>
+                    <p>Costo trasferta per adulto: €${travelCostPerPerson.toFixed(2)}</p>
+                    <p><strong>Costo totale per adulto: €${totalPricePerAdult.toFixed(2)}</strong></p>
+                    <p><strong>Totale adulti: €${totalAdults.toFixed(2)}</strong></p>
+                `;
+            }
+
+            // Sezione bambini solo se ci sono bambini
+            if (children > 0) {
+                output += `
+                    <h3>Bambini</h3>
+                    <p>Costo base per bambino: €${baseCostPerChild.toFixed(2)}</p>
+                    <p>Costo materiali per bambino: €${materialCost.toFixed(2)}</p>
+                    <p>Costo trasferta per bambino: €${travelCostPerPerson.toFixed(2)}</p>
+                    <p><strong>Costo totale per bambino: €${totalPricePerChild.toFixed(2)}</strong></p>
+                    <p><strong>Totale bambini: €${totalChildren.toFixed(2)}</strong></p>
+                `;
+            }
+
+            // Aggiungi il totale complessivo
+            output += `
+                <hr>
+                <h3>Totale Complessivo</h3>
+                <p><strong>€${totalCost.toFixed(2)}</strong></p>
+            `;
+
+            document.getElementById("output").innerHTML = output;
+        }
+    </script>
+</body>
+</html>
